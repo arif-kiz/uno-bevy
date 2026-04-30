@@ -1,0 +1,62 @@
+0 yellow 2
+1 yellow 2
+2 yellow 2
+3 yellow 2
+4 yellow 2
+5 yellow 2
+6 yellow 2
+7 yellow 2
+8 yellow 2
+9 yellow 2
+
+0 blue 2
+1 blue 2
+2 blue 2
+3 blue 2
+4 blue 2
+5 blue 2
+6 blue 2
+7 blue 2
+8 blue 2
+9 blue 2
+
+0 green 2
+1 green 2
+2 green 2
+3 green 2
+4 green 2
+5 green 2
+6 green 2
+7 green 2
+8 green 2
+9 green 2
+
+0 red 2
+1 red 2
+2 red 2
+3 red 2
+4 red 2
+5 red 2
+6 red 2
+7 red 2
+8 red 2
+9 red 2
+
+skip yellow 2
+reverse yellow 2
+draw_two yellow 2
+
+skip blue 2
+reverse blue 2
+draw_two blue 2
+
+skip green 2
+reverse green 2
+draw_two green 2
+
+skip red 2
+reverse red 2
+draw_two red 2
+
+color_change wild 4
+draw_four wild 4
