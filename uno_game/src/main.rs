@@ -5,10 +5,11 @@ mod player;
 use bevy::prelude::*;
 
 use crate::deck::DeckPlugin;
+use crate::player::PlayerPlugin;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, DeckPlugin))
+        .add_plugins((DefaultPlugins, DeckPlugin, PlayerPlugin))
         .add_systems(Startup, setup)
         .run();
 }
