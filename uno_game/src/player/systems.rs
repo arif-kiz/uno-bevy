@@ -1,52 +1,24 @@
 use crate::{
-    card::{UnoAction, UnoColor},
-    deck::{CARD_HEIGHT, CARD_WIDTH, Deck, Discarded, RefreshDiscardedVisualsEvent},
+    deck::{
+        CARD_HEIGHT, CARD_WIDTH, 
+        Deck, 
+        Discarded,
+        RefreshDiscardedVisualsEvent,
+    }, 
+    player::components::{Player, PlayerCardVisual},
 };
-use bevy::{ecs::relationship::Relationship, prelude::*, window::PrimaryWindow};
-use card_shuffling::prelude::*;
-
-pub struct PlayerPlugin;
-
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_player)
-           .add_systems(Update, (temp_handle_player, place_card_from_hand));
-    }
-}
-
-#[derive(Component, Clone)]
-pub struct Player {
-    cards: Vec<Card<UnoAction, UnoColor>>,
-}
-
-impl Player {
-    pub fn hand_cards(&self) -> &Vec<Card<UnoAction, UnoColor>> {
-        &self.cards
-    }
-
-    pub fn add_card(&mut self, card: Card<UnoAction, UnoColor>) {
-        self.cards.push(card)
-    }
-
-    pub fn drop_card(&mut self, index: usize, mut discarded: ResMut<Discarded>) -> Result<(), String> {
-        if !discarded.can_put(*self.cards.get(index).unwrap()) {
-            return Err("You can't place this card".to_string())
-        }
-
-        let card = self.cards.remove(index);
-        discarded.place_card(card)
-    }
-}
-
-#[derive(Component)]
-pub struct PlayerCardVisual(usize);
+use bevy::{
+    prelude::*,
+    ecs::relationship::Relationship,  
+    window::PrimaryWindow,
+};
 
 pub fn setup_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut deck: ResMut<Deck>,
 ) {
-    let mut player = Player { cards: Vec::new() };
+    let mut player = Player::default();
     for _ in 0..7 {
         if let Some(card) = deck.draw() {
             player.add_card(card);
@@ -92,7 +64,7 @@ fn player_refresh_card_visuals(
             let x = position_of_card_in_player(index as f32, player.hand_cards().len() as f32);
 
             parent.spawn((
-                PlayerCardVisual(index),
+                PlayerCardVisual::new(index),
                 Sprite {
                     image: asset_server.load(card_name),
                     custom_size: Some(Vec2::new(CARD_WIDTH, CARD_HEIGHT)),
@@ -122,7 +94,7 @@ fn position_of_card_in_player(index: f32, cards_len: f32) -> f32 {
     start_x + (index * actual_spacing)
 }
 
-fn place_card_from_hand(
+pub fn place_card_from_hand(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     click_input: Res<ButtonInput<MouseButton>>,
@@ -150,7 +122,7 @@ fn place_card_from_hand(
         let card_rect = Rect::from_center_half_size(center, half_size);
         
         if card_rect.contains(world_pos) {
-            clicked_card = Some((card_index.0, parent.get()));
+            clicked_card = Some((card_index.get_index(), parent.get()));
         }
     }
     

@@ -1,5 +1,4 @@
 use std::fmt::Display;
-
 use card_shuffling::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
