@@ -3,12 +3,21 @@ use card_shuffling::card::Card;
 use crate::card::{UnoAction, UnoColor};
 use crate::deck::Discarded;
 
-#[derive(Component, Clone, Default)]
+#[derive(Component, Default)]
 pub struct Player {
+    id: usize,
     cards: Vec<Card<UnoAction, UnoColor>>,
 }
 
 impl Player {
+    pub fn new(id: usize) -> Self {
+        Self { id, cards: Vec::new() }
+    }
+
+    pub fn get_id(&self) -> usize {
+        self.id
+    }
+
     pub fn hand_cards(&self) -> &Vec<Card<UnoAction, UnoColor>> {
         &self.cards
     }
@@ -17,7 +26,7 @@ impl Player {
         self.cards.push(card)
     }
 
-    pub fn drop_card(&mut self, index: usize, mut discarded: ResMut<Discarded>) -> Result<(), String> {
+    pub fn drop_card(&mut self, index: usize, discarded: &mut ResMut<Discarded>) -> Result<Card<UnoAction, UnoColor>, String> {
         if !discarded.can_put(*self.cards.get(index).unwrap()) {
             return Err("You can't place this card".to_string())
         }
@@ -27,7 +36,7 @@ impl Player {
     }
 }
 
-#[derive(Component, Clone, Default)]
+#[derive(Component, Default)]
 pub struct PlayerCardVisual(usize);
 
 impl PlayerCardVisual {

@@ -43,20 +43,25 @@ impl Discarded {
         let card_action = card.get_action();
         let card_color = card.get_color();
 
-        if card_color == UnoColor::Wild || card_color == self.card.get_color() {
-            return true
+        if self.get_color() == UnoColor::Wild {
+            return true;
         }
+
+        if card_color == UnoColor::Wild || card_color == self.card.get_color() {
+            return true;
+        }
+
         if card_action == self.get_action() {
-            return true
+            return true;
         }
 
         false
     }
 
-    pub fn place_card(&mut self, card: Card<UnoAction, UnoColor>) -> Result<(), String> {
+    pub fn place_card(&mut self, card: Card<UnoAction, UnoColor>) -> Result<Card<UnoAction, UnoColor>, String> {
         if self.can_put(card) {
             self.card = card;
-            Ok(())
+            Ok(card)
         } else {
             Err(format!("You can't place this card"))
         }
