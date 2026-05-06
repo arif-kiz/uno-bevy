@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::deck::{CARD_HEIGHT, CARD_WIDTH, DECK_POSITION, components::{DeckVisual, DiscardedVisual}, events::RefreshDiscardedVisualsEvent, resources::{Deck, Discarded}};
+use crate::game::deck::{CARD_HEIGHT, CARD_WIDTH, DECK_POSITION, components::{DeckVisual, DiscardedVisual}, events::RefreshDiscardedVisualsEvent, resources::{Deck, Discarded}};
 
 pub fn setup_deck(mut commands: Commands, asset_server: Res<AssetServer>, discarded: Res<Discarded>) {
     let texture = asset_server.load("back.png");

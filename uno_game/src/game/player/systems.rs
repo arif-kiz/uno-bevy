@@ -1,28 +1,25 @@
-use crate::{
-    deck::{
+use crate::game::{
+    card::UnoAction, deck::{
         CARD_HEIGHT, CARD_WIDTH, 
         Deck, 
         Discarded,
         RefreshDiscardedVisualsEvent,
     }, player::{
-        PlayerTurn, components::*, events::*
+        NUMBER_OF_PLAYERS, PlayerTurn, components::*, events::*
     }
 };
 use bevy::{
     prelude::*,
-    ecs::relationship::Relationship,  
     window::PrimaryWindow,
 };
-use card_shuffling::card::Action;
-
-pub const NUMBER_OF_PLAYERS: usize = 2;
 
 pub fn setup_player(
     mut commands: Commands,
     mut deck: ResMut<Deck>,
+    mut player_turn: ResMut<PlayerTurn>
 ) {
     for id in 0..NUMBER_OF_PLAYERS {
-        let mut player = Player::new(id);
+        let mut player = Player::new();
         for _ in 0..7 {
             if let Some(card) = deck.draw() {
                 player.add_card(card);
@@ -30,11 +27,12 @@ pub fn setup_player(
         }
 
         let y = (id as f32 - 0.5) * 300.0;
-        commands.spawn((
+        let player_entity = commands.spawn((
             player,
             Transform::from_translation(Vec3::new(0.0, y, 0.0)),
             Visibility::default(),
-        ));
+        )).id();
+        player_turn.set_player(player_entity, id);
     }
     commands.trigger(RefreshPlayerVisualsEvent::all());
 }
@@ -47,14 +45,12 @@ pub fn temp_handle_player(
     mut player_query: Query<&mut Player>,
 ) {
     if input.just_pressed(MouseButton::Right) {
-        for mut player in player_query.iter_mut() {
-            if player.get_id() == player_turn.get_current_player() {
-                if let Some(card) = deck.draw() {
-                    player.add_card(card);
-                    commands.trigger(RefreshPlayerVisualsEvent::new(player.get_id()));
-                    player_turn.change_player((player.get_id() + 1) % NUMBER_OF_PLAYERS);
-                    break;
-                }
+        let current_player_id = player_turn.get_current_player();
+        if let Ok(mut player) = player_query.get_mut(current_player_id) {
+            if let Some(card) = deck.draw() {
+                player.add_card(card);
+                commands.trigger(RefreshPlayerVisualsEvent::new(current_player_id));
+                player_turn.change_player();
             }
         }
     }
@@ -73,12 +69,9 @@ pub fn player_refresh_card_visuals(
             }
         }
 
-        PlayerVisualsEvent::Refresh(id) => {
-            for (player_entity, player) in player_query.iter() {
-                if &player.get_id() == id {
-                    refresh_player(&mut commands, player_entity, player, &asset_server);
-                    break;
-                }
+        PlayerVisualsEvent::Refresh(player_entity) => {
+            if let Ok((entity, player)) = player_query.get(*player_entity) {
+                refresh_player(&mut commands, entity, player, &asset_server);
             }
         }
     }
@@ -135,8 +128,8 @@ pub fn place_card_from_hand(
     mut discarded: ResMut<Discarded>,
     mut player_turn: ResMut<PlayerTurn>,
     camera_q: Query<(&Camera, &GlobalTransform), (With<Camera2d>, Without<PlayerCardVisual>)>,
-    card_query: Query<(&GlobalTransform, &PlayerCardVisual, &ChildOf)>,
-    mut player_query: Query<&mut Player>,
+    card_query: Query<(&GlobalTransform, &PlayerCardVisual)>,
+    mut player_query: Query<(&mut Player, Option<&Children>)>,
     window_q: Query<&Window, With<PrimaryWindow>>,
 ) {
     if !click_input.just_pressed(MouseButton::Left) {
@@ -149,37 +142,76 @@ pub fn place_card_from_hand(
 
     let world_pos = camera.viewport_to_world_2d(camera_transform, cursor_pos).unwrap();
 
+    let current_player_entity = player_turn.get_current_player();
+    let Ok((mut player, children_opt)) = player_query.get_mut(current_player_entity) else { return; };
+
     let mut clicked_card = None;
 
-    for (global_transform, card_index, parent) in card_query.iter() {
-        let center = global_transform.translation().xy();
-        let half_size = Vec2::new(CARD_WIDTH / 2.0, CARD_HEIGHT / 2.0);
-        let card_rect = Rect::from_center_half_size(center, half_size);
-        
-        if card_rect.contains(world_pos) {
-            if let Some((index, _)) = clicked_card {
-                if index > card_index.get_index() {
-                    break;
+    if let Some(children) = children_opt {
+        for child in children.iter() {
+            if let Ok((global_transform, card_index)) = card_query.get(child) {
+                let center = global_transform.translation().xy();
+                let half_size = Vec2::new(CARD_WIDTH / 2.0, CARD_HEIGHT / 2.0);
+                let card_rect = Rect::from_center_half_size(center, half_size);
+                
+                if card_rect.contains(world_pos) {
+                    if let Some((index, _)) = clicked_card {
+                        if index > card_index.get_index() {
+                            continue;
+                        }
+                    }
+                    clicked_card = Some((card_index.get_index(), child));
                 }
             }
-            clicked_card = Some((card_index.get_index(), parent.get()));
         }
     }
     
-    let Some((index, player_entity)) = clicked_card else { return; };
-    let Ok(mut player) = player_query.get_mut(player_entity) else { return; };
-
-    if player.get_id() != player_turn.get_current_player() {
-        println!("Nor current player.");
-        return;
-    }
+    let Some((index, _)) = clicked_card else { return; };
 
     let Ok(placed_card) = player.drop_card(index, &mut discarded) else {
-                        println!("You can't place this card"); return; };
-    if placed_card.get_action().power() == 1 {
-        player_turn.change_player((player.get_id() + 1) % NUMBER_OF_PLAYERS);
+        println!("You can't place this card");
+        return; 
+    };
+
+    player_turn.change_player();
+    match placed_card.get_action() {
+        UnoAction::Skip => player_turn.change_player(),
+        UnoAction::Reverse => {player_turn.change_direction(); if NUMBER_OF_PLAYERS == 2 {player_turn.change_player();}},
+        UnoAction::DrawTwo => add_draw_cards(&mut commands, player_turn.get_current_player(), 2),
+        UnoAction::DrawFour => add_draw_cards(&mut commands, player_turn.get_current_player(), 4),
+        _ => {},
     }
 
     commands.trigger(RefreshDiscardedVisualsEvent);
-    commands.trigger(RefreshPlayerVisualsEvent::new(player.get_id()));
+    commands.trigger(RefreshPlayerVisualsEvent::new(current_player_entity));
+}
+
+fn add_draw_cards(
+    commands: &mut Commands,
+    current_player: Entity,
+    no_cards: usize,
+) {
+    let mut player_commands = commands.entity(current_player);
+    player_commands.insert(DrawCards::new(no_cards));
+}
+
+pub fn draw_cards(
+    mut commands: Commands,
+    mut deck: ResMut<Deck>,
+    mut player_query: Query<(Entity, &mut Player, &mut DrawCards)>,
+) {
+    for (player_entity, mut player, draw) in player_query.iter_mut() {
+        for _ in 0..draw.no_cards() {
+            if let Some(card) = deck.draw() {
+                player.add_card(card);
+            } else {
+                break;
+            }
+        }
+        
+        commands.trigger(
+            RefreshPlayerVisualsEvent::new(player_entity)
+        );
+        commands.entity(player_entity).remove::<DrawCards>();
+    }
 }

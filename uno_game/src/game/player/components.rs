@@ -1,21 +1,16 @@
 use bevy::prelude::*;
 use card_shuffling::card::Card;
-use crate::card::{UnoAction, UnoColor};
-use crate::deck::Discarded;
+use crate::game::card::{UnoAction, UnoColor};
+use crate::game::deck::Discarded;
 
 #[derive(Component, Default)]
 pub struct Player {
-    id: usize,
     cards: Vec<Card<UnoAction, UnoColor>>,
 }
 
 impl Player {
-    pub fn new(id: usize) -> Self {
-        Self { id, cards: Vec::new() }
-    }
-
-    pub fn get_id(&self) -> usize {
-        self.id
+    pub fn new() -> Self {
+        Self {cards: Vec::new() }
     }
 
     pub fn hand_cards(&self) -> &Vec<Card<UnoAction, UnoColor>> {
@@ -45,6 +40,19 @@ impl PlayerCardVisual {
     }
 
     pub fn get_index(&self) -> usize{
+        self.0
+    }
+}
+
+#[derive(Component, Default)]
+pub struct DrawCards(usize);
+
+impl DrawCards {
+    pub fn new(no_cards: usize) -> Self {
+        Self(no_cards)
+    }
+
+    pub fn no_cards(&self) -> usize {
         self.0
     }
 }

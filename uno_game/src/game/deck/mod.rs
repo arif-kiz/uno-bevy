@@ -4,7 +4,7 @@ mod events;
 mod systems;
 
 use bevy::prelude::*;
-use crate::deck::systems::{
+use crate::game::deck::systems::{
     refresh_discarded_visuals, 
     setup_deck, 
     temp_handle_deck

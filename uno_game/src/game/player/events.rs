@@ -4,10 +4,10 @@ use bevy::prelude::*;
 pub enum PlayerVisualsEvent {
     #[default]
     RefreshAll,
-    Refresh(usize),
+    Refresh(Entity),
 }
 
-#[derive(Event, Clone, Debug, Default)]
+#[derive(Event, Clone, Debug)]
 pub struct RefreshPlayerVisualsEvent(PlayerVisualsEvent);
 
 impl RefreshPlayerVisualsEvent {
@@ -15,8 +15,8 @@ impl RefreshPlayerVisualsEvent {
         Self(PlayerVisualsEvent::RefreshAll)
     }
 
-    pub fn new(id: usize) -> Self {
-        Self(PlayerVisualsEvent::Refresh(id))
+    pub fn new(player_entity: Entity) -> Self {
+        Self(PlayerVisualsEvent::Refresh(player_entity))
     }
 
     pub fn get_event(&self) -> &PlayerVisualsEvent {

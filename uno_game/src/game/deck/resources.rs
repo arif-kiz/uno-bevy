@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use card_shuffling::{card::Card, cards::Cards};
 use rand::rngs::StdRng;
-use crate::card::{UnoAction, UnoColor};
+use crate::game::card::{UnoAction, UnoColor};
 
 #[derive(Resource)]
 pub struct Deck {

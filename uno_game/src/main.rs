@@ -1,19 +1,10 @@
-mod deck;
-mod card;
-mod player;
+mod game;
 
-use bevy::prelude::*;
-
-use crate::deck::DeckPlugin;
-use crate::player::PlayerPlugin;
+use bevy::app::App;
+use game::GamePlugin;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, DeckPlugin, PlayerPlugin))
-        .add_systems(Startup, setup)
+        .add_plugins(GamePlugin)
         .run();
-}
-
-fn setup(mut commands: Commands) {
-    commands.spawn(Camera2d);
 }
